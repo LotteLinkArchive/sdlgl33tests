@@ -1,7 +1,7 @@
 #include "holyh/src/holy.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
-#include <SDL2/SDL_opengl.h>
+#include <GL/glcorearb.h>
 
 /* This struct contains all of the properties for a window - borrowed from HAZE. */
 struct hzwinprop {
@@ -17,6 +17,9 @@ struct hzwinprop {
 /* We create a global declaration of a window struct to use elsewhere in the program. This is our primary window. */
 struct hzwinprop primarywin;
 
+PFNGLCLEARCOLORPROC glClearColor = NULL;
+PFNGLCLEARPROC glClear = NULL;
+
 /* This is a cleanup step, which destroys the primary SDL window and quits SDL. */
 X0 cleanup()
 {
@@ -31,6 +34,10 @@ X0 cleanup()
 
 		/* Destroy the primary window */
 		if(primarywin.window) SDL_DestroyWindow(primarywin.window);
+
+		/* RODGER: Clear OpenGL function pointers */
+		glClearColor = NULL;
+		glClear = NULL;
 	}
 
 	/* Quit SDL (Does not quit the whole program, just presumably gets SDL to clean up) */
@@ -136,10 +143,32 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 			"You might be able to resolve this by using Mesa software rendering.\n\n"
 			"SDL Error: %s", SDL_GetError());
 
+	/* RODGER: Import core OpenGL functions by querying their procedure addresses.
+	 * You'll need to use the same method to get the procedures for OpenGL extensions
+	 * except in that case you need to check for the extension's availability by parsing
+	 * the GL_EXTENSIONS string first as GetProcAddress implementations are not guaranteed
+	 * to return a valid function pointer.
+	 *
+	 * One particular caveat of SDL2's abstraction is that this code is not conformant
+	 * ISO C code because it returns a void pointer instead of a void function pointer
+	 * and conversion between the two is forbidden under ISO C.
+	 */
+	glClear = SDL_GL_GetProcAddress("glClear");
+	glClearColor = SDL_GL_GetProcAddress("glClearColor");
+
 	/* This makes our buffer swap syncronized with the monitor's vertical refresh. In other words, V-Sync.
 	 * You'll see this in action a bit later.
 	 */
 	SDL_GL_SetSwapInterval(1);
+
+	/* RODGER: Now that we got the OpenGL function pointers we needed we could
+	 * freely call it at any point as long as the pointers themselves remain valid.
+	 */
+
+	/* Specifies clear values for the colour buffers. We want the whole colour buffer to be magenta, so
+	 * we set the colour buffer's clear value to magenta.
+	 */
+	glClearColor(1.f, 0.f, 1.f, 0.f);
 
 	/* The main loop. This renders every single frame, so when one frame is done, the loop starts again. */
 	while (!primarywin.quit) {
@@ -170,11 +199,6 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 		 * (Not strictly neccessary in this template, but it's used in HAZE)
 		 */
 		SDL_GetWindowSize(primarywin.window, &primarywin.width, &primarywin.height);
-
-		/* Specifies clear values for the colour buffers. We want the whole colour buffer to be magenta, so
-		 * we set the colour buffer's clear value to magenta.
-		 */
-		glClearColor(1.f, 0.f, 1.f, 0.f);
 
 		/* Then we clear the colour buffer, making everything magenta. */
 		glClear(GL_COLOR_BUFFER_BIT);
