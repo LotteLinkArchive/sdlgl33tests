@@ -10,3 +10,4 @@ thread_dep = dependency('threads')
 gdeps = [m_dep, sdl2_dep, gl_dep, thread_dep]
 
 executable('template', 'template.c', dependencies : gdeps)
+executable('testing', 'testing.c', dependencies : gdeps)
