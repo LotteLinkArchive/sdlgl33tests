@@ -1,7 +1,9 @@
 #include "holyh/src/holy.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
+#include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
+#include <GL/glu.h>
 
 /* This struct contains all of the properties for a window - borrowed from HAZE. */
 struct hzwinprop {
@@ -136,6 +138,11 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 			"You might be able to resolve this by using Mesa software rendering.\n\n"
 			"SDL Error: %s", SDL_GetError());
 
+	/* Initialize GLEW */
+	glewExperimental = GL_TRUE;
+	GLenum glewError = glewInit();
+	if(glewError != GLEW_OK) errwindow("Error initializing GLEW! %s\n", glewGetErrorString(glewError));
+
 	/* This makes our buffer swap syncronized with the monitor's vertical refresh. In other words, V-Sync.
 	 * You'll see this in action a bit later.
 	 */
@@ -167,13 +174,13 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	glCompileShader(fragment_shader);
 	
 	/* scream if the shady shaders didn't compile */
-	U8 vs_success;
+	GLint vs_success;
 	glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &vs_success);
 	if (!vs_success) {
 		errwindow("vertex_shader didn't compile. how do i pass non-constant strings to this?");
 	}
 	
-	U8 fs_success;
+	GLint fs_success;
 	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &fs_success);
 	if (!fs_success) {
 		errwindow("fragment_shader didn't compile. how do i pass non-constant strings to this?");
@@ -187,7 +194,7 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	glLinkProgram(shader_program);
 	
 	/* mmm repeating code */
-	U8 sp_success;
+	GLint sp_success;
 	glGetProgramiv(shader_program, GL_LINK_STATUS, &sp_success);
 	if (!sp_success) {
 		errwindow("shaders didn't link. how do i pass non-constant strings to this?");
