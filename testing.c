@@ -140,7 +140,64 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	 * You'll see this in action a bit later.
 	 */
 	SDL_GL_SetSwapInterval(1);
-
+	
+	/* the shaders */
+	/* i think this is dumb. how do i include a shader as a separate file? */
+	const CHR *vertex_shader_source = "#version 330 core\n"
+		"layout (location = 0) in vec3 aPos;\n"
+		"void main()\n"
+		"{\n"
+		"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+		"}\0";
+	UNAT vertex_shader;
+	vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
+	glCompileShader(vertex_shader);
+	
+	/* fragment shader, all fragments are just #000000 */
+	const CHR *fragment_shader_source = "#version 330 core\n"
+		"out vec4 FragColor;\n"
+		"void main()\n"
+		"{\n"
+		"	FragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
+		"}\0";
+	UNAT fragment_shader;
+	fragment_shader= glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
+	glCompileShader(fragment_shader);
+	
+	/* scream if the shady shaders didn't compile */
+	U8 vs_success;
+	glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &vs_success);
+	if (!vs_success) {
+		errwindow("vertex_shader didn't compile. how do i pass non-constant strings to this?");
+	}
+	
+	U8 fs_success;
+	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &fs_success);
+	if (!fs_success) {
+		errwindow("fragment_shader didn't compile. how do i pass non-constant strings to this?");
+	}
+	
+	/* get with the program */
+	UNAT shader_program;
+	shader_program = glCreateProgram();
+	glAttachShader(shader_program, vertex_shader);
+	glAttachShader(shader_program, fragment_shader);
+	glLinkProgram(shader_program);
+	
+	/* mmm repeating code */
+	U8 sp_success;
+	glGetProgramiv(shader_program, GL_LINK_STATUS, &sp_success);
+	if (!sp_success) {
+		errwindow("shaders didn't link. how do i pass non-constant strings to this?");
+	}
+	
+	/* perish */
+	glDeleteShader(vertex_shader);
+	glDeleteShader(fragment_shader);
+	
+	/* this is my triangle */
 	RNAT vertices[] = {
 		-0.5f, -0.5f, 0.0f,
 		 0.5f, -0.5f, 0.0f,
@@ -149,10 +206,17 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	
 	UNAT VBO;
 	glGenBuffers(1, &VBO);
+	
+	UNAT VAO;
+	glGenVertexArrays(1, &VAO);
+	
+	glBindVertexArray(VAO);
+	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	
-	
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(RNAT), (X0*)0);
+	glEnableVertexAttribArray(0);
 	
 	while (!primarywin.quit) {
 		/* Poll SDL for events. If SDL has no events for us to collect, continue rendering instead. */
@@ -190,6 +254,11 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 
 		/* Then we clear the colour buffer, making everything magenta. */
 		glClear(GL_COLOR_BUFFER_BIT);
+		
+		/* triangle */
+		glUseProgram(shader_program);
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		/* Swap our buffer to display the current contents of buffer on screen.
 		 * Since we set SDL_GL_SetSwapInterval(1), this will use the monitor's refresh rate.
