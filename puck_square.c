@@ -154,9 +154,15 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	/* i think this is dumb. how do i include a shader as a separate file? */
 	const CHR *vertex_shader_source = "#version 330 core\n"
 		"layout (location = 0) in vec3 aPos;\n"
+		"layout (location = 1) in vec3 aColor;\n"
+		"layout (location = 2) in vec2 aTexCoord;\n"
+		"out vec3 ourColor;\n"
+		"out vec2 TexCoord;\n"
 		"void main()\n"
 		"{\n"
 		"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+		"	ourColor = aColor;\n"
+		"	TexCoord = aTexCoord;\n"
 		"}\0";
 	UNAT vertex_shader;
 	vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -166,9 +172,12 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	/* fragment shader, all fragments are just #000000 */
 	const CHR *fragment_shader_source = "#version 330 core\n"
 		"out vec4 FragColor;\n"
+		"in vec3 ourColor;\n"
+		"in vec2 TexCoord;\n"
+		"uniform sampler2D ourTexture;\n"
 		"void main()\n"
 		"{\n"
-		"	FragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
+		"	FragColor = texture(ourTexture, TexCoord);\n"
 		"}\0";
 	UNAT fragment_shader;
 	fragment_shader= glCreateShader(GL_FRAGMENT_SHADER);
@@ -208,35 +217,56 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	
 	/* this is my square */
 	RNAT vertices[] = {
-		 0.6f,  0.8f, 0.0f,
-		 0.6f, -0.8f, 0.0f,
-		-0.6f, -0.8f, 0.0f,
-		-0.6f,  0.8f, 0.0f
+	/*   position           color             tex coords */
+		 0.6f,  0.8f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+		 0.6f, -0.8f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+		-0.6f, -0.8f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+		-0.6f,  0.8f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f
 	};
 	UNAT indices[] = {
 		0, 1, 3,
 		1, 2, 3
 	};
 	
-	UNAT VBO;
+	/* declare vertex buffer, vertex array, and element buffer */
+	UNAT VBO, VAO, EBO;
 	glGenBuffers(1, &VBO);
-	
-	UNAT VAO;
 	glGenVertexArrays(1, &VAO);
-	
-	UNAT EBO;
 	glGenBuffers(1, &EBO);
 	
+	/* bind them */
 	glBindVertexArray(VAO);
-	
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 	
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(RNAT), (X0*)0);
+	/* vertex position attrib */
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(RNAT), (X0*)0);
 	glEnableVertexAttribArray(0);
+	/* vertex color attrib */
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(RNAT), (X0*)(3 * sizeof(RNAT)));
+	glEnableVertexAttribArray(1);
+	/* vertex tex coord attrib */
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(RNAT), (X0*)(6 * sizeof(RNAT)));
+	glEnableVertexAttribArray(2);
+	
+	/* load da tex */
+	INAT tex_width, tex_height, nr_channels;
+	stbi_set_flip_vertically_on_load(1);
+	U8 *tex_data = stbi_load("assets/puckface.png", &tex_width, &tex_height, &nr_channels, 0);
+	UNAT puck_texture;
+	glGenTextures(1, &puck_texture);
+	glBindTexture(GL_TEXTURE_2D, puck_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex_width, tex_height, 0, GL_RGB, GL_UNSIGNED_BYTE, tex_data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(tex_data);
+	
+	/* texture wrap + scale behavior */
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
 	while (!primarywin.quit) {
 		/* Poll SDL for events. If SDL has no events for us to collect, continue rendering instead. */
@@ -270,17 +300,17 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 		/* Specifies clear values for the colour buffers. We want the whole colour buffer to be magenta, so
 		 * we set the colour buffer's clear value to magenta.
 		 */
-		glClearColor(1.f, 0.f, 1.f, 0.f);
+		glClearColor(0.f, 0.f, 0.f, 1.f);
 
 		/* Then we clear the colour buffer, making everything magenta. */
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		/* triangle */
+		glBindTexture(GL_TEXTURE_2D, puck_texture);
 		glUseProgram(shader_program);
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
+		
 		/* Swap our buffer to display the current contents of buffer on screen.
 		 * Since we set SDL_GL_SetSwapInterval(1), this will use the monitor's refresh rate.
 		 */
