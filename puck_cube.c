@@ -4,6 +4,7 @@
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
 #include <GL/glu.h>
+#include <cglm/cglm.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 

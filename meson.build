@@ -7,7 +7,7 @@ sdl2_dep = dependency('sdl2')
 gl_dep = dependency('GL')
 thread_dep = dependency('threads')
 glew_dep = dependency('glew')
-cglm_dep = dependency('cglm', fallback : 'cglm', 'cglm_dep')
+cglm_dep = dependency('cglm', required: false)
 
 gdeps = [m_dep, sdl2_dep, gl_dep, thread_dep, glew_dep]
 
