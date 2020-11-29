@@ -14,4 +14,4 @@ gdeps = [m_dep, sdl2_dep, gl_dep, thread_dep, glew_dep]
 executable('template', 'template.c', dependencies : gdeps)
 executable('hello_triangle', 'hello_triangle.c', dependencies : gdeps)
 executable('puck_square', 'puck_square.c', dependencies : gdeps)
-executable('puck_cube', 'puck_cube.c', dependencies : [gdeps, cglm_dep])
+executable('puck_spin', 'puck_spin.c', dependencies : [gdeps, cglm_dep])
