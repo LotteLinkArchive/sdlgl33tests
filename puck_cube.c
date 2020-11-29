@@ -156,15 +156,13 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	/* i think this is dumb. how do i include a shader as a separate file? */
 	const CHR *vertex_shader_source = "#version 330 core\n"
 		"layout (location = 0) in vec3 aPos;\n"
-		"layout (location = 1) in vec3 aColor;\n"
-		"layout (location = 2) in vec2 aTexCoord;\n"
+		"layout (location = 1) in vec2 aTexCoord;\n"
 		"out vec3 ourColor;\n"
 		"out vec2 TexCoord;\n"
 		"uniform mat4 transform;\n"
 		"void main()\n"
 		"{\n"
 		"	gl_Position = transform * vec4(aPos, 1.0f);\n"
-		"	ourColor = aColor;\n"
 		"	TexCoord = aTexCoord;\n"
 		"}\0";
 	UNAT vertex_shader;
@@ -172,16 +170,14 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
 	glCompileShader(vertex_shader);
 	
-	/* fragment shader, all fragments are just #000000 */
+	/* fragment shader */
 	const CHR *fragment_shader_source = "#version 330 core\n"
 		"out vec4 FragColor;\n"
-		"in vec3 ourColor;\n"
 		"in vec2 TexCoord;\n"
 		"uniform sampler2D ourTexture;\n"
 		"void main()\n"
 		"{\n"
 		"	FragColor = texture(ourTexture, TexCoord);\n"
-		"	FragColor.xyz *= ourColor;\n"
 		"}\0";
 	UNAT fragment_shader;
 	fragment_shader= glCreateShader(GL_FRAGMENT_SHADER);
@@ -219,41 +215,68 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 	
-	/* this is my square */
+	/* this is my cube */
 	RNAT vertices[] = {
-	/*   position           color             tex coords */
-		 0.7f,  0.7f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-		 0.7f, -0.7f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-		-0.7f, -0.7f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-		-0.7f,  0.7f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f
-	};
-	UNAT indices[] = {
-		0, 1, 3,
-		1, 2, 3
+	/*   position             tex coords */
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
 	
-	/* declare vertex buffer, vertex array, and element buffer */
-	UNAT VBO, VAO, EBO;
+	/* declare vertex buffer and vertex array */
+	UNAT VBO, VAO;
 	glGenBuffers(1, &VBO);
 	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &EBO);
 	
 	/* bind them */
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 	
 	/* vertex position attrib */
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(RNAT), (X0*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(RNAT), (X0*)0);
 	glEnableVertexAttribArray(0);
-	/* vertex color attrib */
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(RNAT), (X0*)(3 * sizeof(RNAT)));
-	glEnableVertexAttribArray(1);
 	/* vertex tex coord attrib */
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(RNAT), (X0*)(6 * sizeof(RNAT)));
-	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(RNAT), (X0*)(3 * sizeof(RNAT)));
+	glEnableVertexAttribArray(1);
 	
 	/* load da tex */
 	INAT tex_width, tex_height, nr_channels;
@@ -335,7 +358,7 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 		glUniformMatrix4fv(transform_loc, 1, GL_FALSE, (RNAT*)spin_matrix);
 		
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 		
 		/* Swap our buffer to display the current contents of buffer on screen.
 		 * Since we set SDL_GL_SetSwapInterval(1), this will use the monitor's refresh rate.
