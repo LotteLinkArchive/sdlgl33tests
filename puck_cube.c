@@ -159,10 +159,12 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 		"layout (location = 1) in vec2 aTexCoord;\n"
 		"out vec3 ourColor;\n"
 		"out vec2 TexCoord;\n"
-		"uniform mat4 transform;\n"
+		"uniform mat4 model;\n"
+		"uniform mat4 view;\n"
+		"uniform mat4 projection;\n"
 		"void main()\n"
 		"{\n"
-		"	gl_Position = transform * vec4(aPos, 1.0f);\n"
+		"	gl_Position = projection * view * model * vec4(aPos, 1.0f);\n"
 		"	TexCoord = aTexCoord;\n"
 		"}\0";
 	UNAT vertex_shader;
@@ -210,6 +212,9 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 	if (!sp_success) {
 		errwindow("shaders didn't link. how do i pass non-constant strings to this?");
 	}
+	
+	/* z buffer */
+	glEnable(GL_DEPTH_TEST);
 	
 	/* perish */
 	glDeleteShader(vertex_shader);
@@ -330,7 +335,7 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 		glClearColor(0.f, 0.f, 0.f, 1.f);
 
 		/* Then we clear the colour buffer, making everything magenta. */
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		/* cube */
 		glBindTexture(GL_TEXTURE_2D, puck_texture);
@@ -338,24 +343,42 @@ INAT main(INAT argc, CHR *argv[]) /* Remember, argc is the number of arguments, 
 		
 		/* create the funny transform matrix */
 		static RNAT theta = 0.0f;
-		theta += 0.1;
-		mat4 spin_matrix = {
-			cos(theta), -sin(theta), 0, 0,
-			sin(theta), cos(theta), 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1
-		};
-		mat4 squish_matrix = {
-			0.75, 0, 0, 0,
+		theta += 0.02;
+		
+		mat4 model_matrix = {
+			1, 0, 0, 0,
 			0, 1, 0, 0,
 			0, 0, 1, 0,
 			0, 0, 0, 1
 		};
-		glm_mat4_mul(squish_matrix, spin_matrix, spin_matrix);
 		
-		/* pass transform matrix to vertex shader */
-		UNAT transform_loc = glGetUniformLocation(shader_program, "transform");
-		glUniformMatrix4fv(transform_loc, 1, GL_FALSE, (RNAT*)spin_matrix);
+		mat4 view_matrix = {
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		};
+		
+		mat4 proj_matrix = {
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		};
+		
+		glm_rotate_y(model_matrix, theta, model_matrix);
+		glm_rotate_z(model_matrix, theta, model_matrix);
+		glm_translate_z(view_matrix, -3.0f);
+		glm_perspective(0.7854f, 1.3333f, 0.100f, 100.0f, proj_matrix);
+		
+		/* pass matrices to vertex shader */
+		UNAT model_loc, view_loc, proj_loc;
+		model_loc = glGetUniformLocation(shader_program, "model");
+		view_loc = glGetUniformLocation(shader_program, "view");
+		proj_loc = glGetUniformLocation(shader_program, "projection");
+		glUniformMatrix4fv(model_loc, 1, GL_FALSE, (RNAT*)model_matrix);
+		glUniformMatrix4fv(view_loc, 1, GL_FALSE, (RNAT*)view_matrix);
+		glUniformMatrix4fv(proj_loc, 1, GL_FALSE, (RNAT*)proj_matrix);
 		
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
